@@ -1,0 +1,10 @@
+> dem_alos <- get_elev_raster(torobamba, src = "alos", clip = "locations")
+Error in get_opentopo_key() :
+  You have not set your OpenTopography API Key.
+         Please use elevatr::set_opentopo_key().
+
+library(terra)
+terra:::.get_proj_search_paths()
+terra:::.set_proj_search_paths("the path you want") 
+
+terra:::.set_proj_search_paths("C:/OSGeo4W/share/proj")
