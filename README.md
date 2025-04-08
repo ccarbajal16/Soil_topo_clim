@@ -1,6 +1,6 @@
 # Soil, Topography and Climate Analysis Tools
 
-This repository contains R scripts for download and processing soil, topography, and climate data using various R packages including Terra, RSAGA, WhiteBox, and Geodata.
+This repository contains R scripts for download and processing soil, topography, and climate data using various R packages including Terra, RSAGA, WhiteBox, rgrass, and Geodata.
 
 ![img](outputs/raster_wbt_comparison.png)
 
@@ -28,9 +28,10 @@ library(sf)        # Simple features for R
 # Elevation data
 library(elevatr)   # For downloading elevation data
 
-# Terrain analysis
+# Terrain and hydrological analysis
 library(whitebox)  # WhiteBox tools interface
 library(RSAGA)     # SAGA GIS interface
+library(rgrass)   # GRASS GIS interface
 
 # Climate and soil data
 library(geodata)   # For downloading climate and soil data
@@ -78,6 +79,28 @@ Uses the `geodata` package for:
 - Processing temperature and precipitation data
 - Downloading and processing soil data from SoilGrids
 
+### 5. rgrass tools (`5_use_rgrass.R`)
+
+Uses the `rgrass` package to interface with GRASS GIS for:
+
+- Setting up and initializing a GRASS environment
+- Topographic analysis (slope, aspect, relief)
+- Advanced hydrological modeling:
+  - Topographic Wetness Index (TWI)
+  - Flow length calculation
+  - Flow direction and accumulation
+  - Stream network delineation
+- Cost surface analysis for path planning
+- Visualization of topographic and hydrological variables
+
+The script demonstrates how to:
+- Import/export data between R and GRASS
+- Use GRASS's powerful command-line tools from within R
+- Generate publication-quality visualizations of terrain derivatives
+- Process and export multiple hydrological indices
+
+![Hydrological Layers](outputs/hidro_maps.png)
+
 ## Data Structure
 
 - `/data/`: Contains input data files
@@ -88,6 +111,7 @@ Uses the `geodata` package for:
 
   - Processed DEM files
   - Terrain analysis results
+  - Hydrological analysis results
   - Climate data
 
 ## Notes
