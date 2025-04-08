@@ -85,7 +85,7 @@ Uses the `rgrass` package to interface with GRASS GIS for:
 
 - Setting up and initializing a GRASS environment
 - Topographic analysis (slope, aspect, relief)
-- Advanced hydrological modeling:
+- Hydrological analysis:
   - Topographic Wetness Index (TWI)
   - Flow length calculation
   - Flow direction and accumulation
