@@ -36,6 +36,13 @@ new_pkgs  <- required[!(required %in% installed.packages()[, "Package"])]
 if (length(new_pkgs)) install.packages(new_pkgs)
 invisible(lapply(required, library, character.only = TRUE))
 
+# Simple timestamped console logger used throughout this script.
+# level: "INFO" (default), "SUCCESS", "WARNING", "ERROR"
+log_msg <- function(msg, level = "INFO") {
+  ts <- format(Sys.time(), "%H:%M:%S")
+  cat(sprintf("[%s] [%-7s] %s\n", ts, level, msg))
+}
+
 # ── 1. CONFIGURATION ──────────────────────────────────────────────────────────
 # Loading and standardizing the study-area boundary polygon (the AOI)
 # from a spatial file (typically a GeoPackage).
@@ -147,7 +154,7 @@ VAR_LABELS <- c(
   phh2o    = "pH (water)",
   sand     = "Sand (g kg\u207b\u00b9)",
   silt     = "Silt (g kg\u207b\u00b9)",
-  soc      = "SOC (dg kg\u207b\u00b9)"
+  soc      = "SOC (g kg\u207b\u00b9)"
 )
 
 # ── 2. DOWNLOAD (VSI streaming at 250 m) ──────────────────────────────────────
@@ -156,15 +163,8 @@ VAR_LABELS <- c(
 #
 
 boundary <- read_boundary(file.path(DATA_DIR, "borde_poly.gpkg"))
-crs_utm <- guess_utm_epsg(boundary)
-log_msg(sprintf("Output CRS (UTM) : EPSG:%s", crs_utm))
-
-# Function to extract BBOX coordinates from the boundary polygon, in WGS84 (for VRT cropping)
-get_bbox_wgs84 <- function(boundary) {
-  boundary_wgs84 <- st_transform(boundary, 4326)
-  bbox <- st_bbox(boundary_wgs84)
-  return(bbox)
-}
+CRS_UTM  <- guess_utm_epsg(boundary)
+log_msg(sprintf("Output CRS (UTM) : EPSG:%s", CRS_UTM))
 
 soil_rasters <- list()
 
@@ -194,10 +194,12 @@ for (var in VARIABLES) {
     # Open remote VRT via GDAL /vsicurl/ driver (Homolosine CRS)
     soil_global <- rast(paste0("/vsicurl/", vrt_url))
 
-    # Reproject the WGS84 bbox polygon to match the raster's native Homolosine CRS,
-    # then derive an extent in that CRS for cropping
-    bbox_native  <- project(bbox_wgs84, crs(soil_global))
-    soil_cropped <- crop(soil_global, bbox_native)
+    # Reproject the boundary polygon to the raster's native Homolosine CRS,
+    # then crop to that extent. terra::project() requires a SpatVector, not
+    # an sf bbox, so we convert the boundary sfc → SpatVector first.
+    aoi_vect     <- vect(st_as_sf(boundary))
+    aoi_native   <- project(aoi_vect, crs(soil_global))
+    soil_cropped <- crop(soil_global, aoi_native)
 
     if (is.null(soil_cropped) || ncell(soil_cropped) == 0)
       stop("Cropped raster is empty — verify BBOX coordinates")
@@ -315,7 +317,7 @@ log_msg("Saved figures/sg_maps_250m.png", "SUCCESS")
 
 # ── 6. SUMMARY ────────────────────────────────────────────────────────────────
 
-cat("\n=== soilgrids_donos_250m.R complete ===\n\n")
+cat("\n=== 6_soilgrids_download.R complete ===\n\n")
 cat("Source  : ISRIC SoilGrids 2.0 VRT (250 m native resolution)\n")
 cat("Method  : /vsicurl/ streaming — no full global file downloaded\n")
 cat("Depth   :", DEPTH_LAYER, "\n")
