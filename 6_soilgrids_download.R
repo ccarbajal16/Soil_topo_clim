@@ -268,7 +268,7 @@ print(sg_stack_utm)
 log_msg("Loading soil profiles from data/soils_points.csv...")
 
 soil_pts <- read_csv("data/soils_points.csv", show_col_types = FALSE) |>
-  st_as_sf(coords = c("LONG", "LAT"), crs = 4326) |>
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
   st_transform(CRS_UTM)
 
 sg_extracted <- terra::extract(sg_stack_utm, vect(soil_pts), ID = FALSE)
@@ -330,14 +330,6 @@ cat("  Individual rasters : data/soilgrids_250m/soilgrids_<var>_15-30cm.tif\n")
 cat("  Multi-band UTM stack:", stack_file, "\n")
 cat("  Profile extraction :", pts_file, "\n")
 cat("  Maps               : figures/sg_maps_250m.png\n")
-
-cat("\nTo use SoilGrids 250 m as extra covariates in 02_R_pca_and_prediction.R:\n")
-cat("  CFG$terrain_raster <- \"data/soilgrids_250m/soilgrids_stack_utm.tif\"\n")
-cat("  (Script 02 will resample it to match the embedding raster grid)\n")
-
-cat("\nComparison with 1 km version (soilgrids_donoso.R):\n")
-cat("  soilgrids_donoso.R      : geodata::soil_world()  → ~1 km (30 arcsec)\n")
-cat("  soilgrids_donos_250m.R  : /vsicurl/ VRT stream   → 250 m (native)\n")
 
 # =============================================================================
 # END OF SCRIPT
