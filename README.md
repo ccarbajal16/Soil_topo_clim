@@ -101,6 +101,42 @@ The script demonstrates how to:
 
 ![Hydrological Layers](outputs/hidro_maps.png)
 
+### 6. SoilGrids 250 m Download (`6_soilgrids_download.R`)
+
+Streams all 10 SoilGrids 2.0 soil properties at 15–30 cm depth directly from
+ISRIC via GDAL `/vsicurl/`, without downloading full global files. Uses `terra`
+and `sf` for reprojection, cropping, and point extraction.
+
+**Variables downloaded** (depth: 15–30 cm, statistic: mean):
+
+| Variable | Description | Physical unit |
+|----------|-------------|---------------|
+| `bdod` | Bulk density of fine earth | kg dm⁻³ |
+| `cec` | Cation exchange capacity | mmol(c) kg⁻¹ |
+| `cfvo` | Coarse fragments volumetric | cm³ 100cm⁻³ |
+| `clay` | Clay content | g kg⁻¹ |
+| `nitrogen` | Total nitrogen | g kg⁻¹ |
+| `ocd` | Organic carbon density | kg m⁻³ |
+| `phh2o` | pH (water 1:2.5) | pH |
+| `sand` | Sand content | g kg⁻¹ |
+| `silt` | Silt content | g kg⁻¹ |
+| `soc` | Soil organic carbon | g kg⁻¹ |
+
+**Workflow:**
+1. Stream each variable from the ISRIC VRT endpoint at native 250 m resolution
+2. Crop to the study-area boundary and scale raw integers to physical units
+3. Reproject to UTM and assemble a 10-band GeoTIFF stack
+4. Extract values at soil profile locations and export to CSV
+5. Plot all variables as a multi-panel map
+
+**Outputs:**
+- `data/soilgrids_250m/soilgrids_<var>_15-30cm.tif` — individual rasters
+- `data/soilgrids_250m/soilgrids_stack_utm.tif` — 10-band UTM stack
+- `data/soilgrids_250m/soilgrids_at_points.csv` — values at soil profile points
+- `figures/sg_maps_250m.png` — multi-panel map of all variables
+
+![SoilGrids 250 m — all variables at 15–30 cm depth](figures/sg_maps_250m.png)
+
 ## Data Structure
 
 - `/data/`: Contains input data files
