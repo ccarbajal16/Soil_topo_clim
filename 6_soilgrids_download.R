@@ -71,7 +71,11 @@ guess_utm_epsg <- function(boundary) {
 # Read soil sampling locations from vector files (gpkg/shp/geojson) or CSV.
 # Vector inputs are assumed to already contain point geometries; CSV inputs must
 # provide lon/lat columns and are interpreted as WGS84 (EPSG:4326).
+# crs_out: numeric EPSG code (e.g. 32718), "EPSG:32718" string, or a crs object.
 read_soil_points <- function(path, crs_out) {
+  if (!file.exists(path)) stop("Soil points file not found: ", path)
+  # Accept numeric EPSG → convert to "EPSG:NNNNN" for st_transform
+  if (is.numeric(crs_out)) crs_out <- paste0("EPSG:", crs_out)
   ext <- tolower(tools::file_ext(path))
   if (ext %in% c("gpkg", "shp", "geojson")) {
     pts <- suppressWarnings(st_read(path, quiet = TRUE))
@@ -263,6 +267,11 @@ cat("\nStack summary:\n")
 print(sg_stack_utm)
 
 # ── 4. EXTRACT VALUES AT SOIL PROFILE LOCATIONS ───────────────────────────────
+# Guard: sections 2–3 must have run first
+if (!exists("CRS_UTM") || !exists("sg_stack_utm")) {
+  stop("Run this script from the top (sections 0–3 define CRS_UTM and sg_stack_utm).")
+}
+
 # Soil points file path — accepts gpkg, shp, geojson, csv, or txt.
 # For CSV/TXT the file must contain lon/lat columns (e.g. LONG/LAT, lon/lat,
 # longitude/latitude). Vector files are reprojected automatically.
@@ -270,7 +279,7 @@ SOIL_POINTS_FILE <- file.path(DATA_DIR, "soils_points.csv")
 
 log_msg(sprintf("Loading soil profiles from %s...", SOIL_POINTS_FILE))
 
-soil_pts <- read_soil_points(SOIL_POINTS_FILE, crs_out = paste0("EPSG:", CRS_UTM))
+soil_pts <- read_soil_points(SOIL_POINTS_FILE, crs_out = CRS_UTM)
 
 log_msg(sprintf("  %d points loaded (CRS: EPSG:%s)", nrow(soil_pts), CRS_UTM))
 
