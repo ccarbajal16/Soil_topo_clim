@@ -160,7 +160,6 @@ VAR_LABELS <- c(
 # ── 2. DOWNLOAD (VSI streaming at 250 m) ──────────────────────────────────────
 # terra::rast("/vsicurl/<url>") opens the remote VRT without downloading the
 # full global file. crop() fetches only the bytes covering the study area.
-#
 
 boundary <- read_boundary(file.path(DATA_DIR, "borde_poly.gpkg"))
 CRS_UTM  <- guess_utm_epsg(boundary)
@@ -267,6 +266,8 @@ print(sg_stack_utm)
 
 log_msg("Loading soil profiles from data/soils_points.csv...")
 
+# IMPORTANT: you must set your own file path to the soil points dataset.
+# Replace the example below with your local path before running the script.
 soil_pts <- read_csv("data/soils_points.csv", show_col_types = FALSE) |>
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
   st_transform(CRS_UTM)
