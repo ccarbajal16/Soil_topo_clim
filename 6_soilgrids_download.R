@@ -263,22 +263,36 @@ cat("\nStack summary:\n")
 print(sg_stack_utm)
 
 # ── 4. EXTRACT VALUES AT SOIL PROFILE LOCATIONS ───────────────────────────────
+# Soil points file path — accepts gpkg, shp, geojson, csv, or txt.
+# For CSV/TXT the file must contain lon/lat columns (e.g. LONG/LAT, lon/lat,
+# longitude/latitude). Vector files are reprojected automatically.
+SOIL_POINTS_FILE <- file.path(DATA_DIR, "soils_points.csv")
 
-log_msg("Loading soil profiles from data/soils_points.csv...")
+log_msg(sprintf("Loading soil profiles from %s...", SOIL_POINTS_FILE))
 
-# IMPORTANT: you must set your own file path to the soil points dataset.
-# Replace the example below with your local path before running the script.
-soil_pts <- read_csv("data/soils_points.csv", show_col_types = FALSE) |>
-  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) |>
-  st_transform(CRS_UTM)
+soil_pts <- read_soil_points(SOIL_POINTS_FILE, crs_out = paste0("EPSG:", CRS_UTM))
+
+log_msg(sprintf("  %d points loaded (CRS: EPSG:%s)", nrow(soil_pts), CRS_UTM))
 
 sg_extracted <- terra::extract(sg_stack_utm, vect(soil_pts), ID = FALSE)
 
 # Prefix all SoilGrids columns to avoid name collision with measured columns
 names(sg_extracted) <- paste0("sg_", names(sg_extracted))
 
+# Extract coordinates in both UTM (from current CRS) and WGS84 (lon/lat)
+coords_utm   <- st_coordinates(soil_pts)
+coords_wgs84 <- st_coordinates(st_transform(soil_pts, 4326))
+
+coords_df <- tibble(
+  longitude = coords_wgs84[, "X"],
+  latitude  = coords_wgs84[, "Y"],
+  easting   = coords_utm[, "X"],
+  northing  = coords_utm[, "Y"]
+)
+
 df_out <- bind_cols(
   st_drop_geometry(soil_pts),
+  coords_df,
   sg_extracted
 )
 
@@ -290,7 +304,7 @@ log_msg(sprintf("Point extraction (%d profiles × %d SG vars) saved → %s",
 # Quick preview
 cat("\n── SoilGrids 250 m values at soil profile points (first 6 rows) ─────\n")
 df_out |>
-  select(fid, starts_with("sg_")) |>
+  select(longitude, latitude, starts_with("sg_")) |>
   head(6) |>
   print()
 
