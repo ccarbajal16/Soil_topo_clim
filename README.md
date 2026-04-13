@@ -15,6 +15,7 @@ This toolset allows for:
 - Hydrological modeling and analysis
 - Climate data acquisition and processing
 - Soil data acquisition
+- Vegetation index computation from satellite imagery
 
 ## Required Packages
 
@@ -35,6 +36,9 @@ library(rgrass)   # GRASS GIS interface
 
 # Climate and soil data
 library(geodata)   # For downloading climate and soil data
+
+# Satellite imagery and spectral indices
+library(rsi)       # Download STAC imagery and compute spectral indices
 
 # Visualization
 library(ggplot2)   # Data visualization
@@ -136,6 +140,45 @@ and `sf` for reprojection, cropping, and point extraction.
 - `figures/sg_maps_250m.png` — multi-panel map of all variables
 
 ![SoilGrids 250 m — all variables at 15–30 cm depth](figures/sg_maps_250m.png)
+
+### 7. Vegetation Indices from Landsat (`7_download_vegetation_indices_rsi.R`)
+
+Downloads Landsat 8/9 Collection 2 Level-2 imagery via the `rsi` package (STAC API),
+computes 10 spectral vegetation indices, and pairs them with soil sampling point
+locations for downstream modelling.
+
+**Workflow:**
+1. Load the study-area polygon, reproject to UTM Zone 18S (EPSG:32718), and build a bounding-box AOI
+2. Download a cloud-masked, median-composited Landsat scene for the growing season (May–Aug)
+3. Crop and mask the imagery to the study-area boundary
+4. Query the [Awesome Spectral Indices](https://github.com/awesome-spectral-indices/awesome-spectral-indices) database and compute 10 indices
+5. Extract index values at soil profile locations and export to CSV
+6. Generate spatial maps, a NDVI + sample-points overlay, and a boxplot of index distributions
+
+**Indices computed:**
+
+| Index | Formula | Description |
+|-------|---------|-------------|
+| NDVI  | (N−R)/(N+R) | General greenness; most cited VI worldwide |
+| MSAVI | Modified SAVI | Reduces soil-brightness effects |
+| GNDVI | (N−G)/(N+G) | More sensitive to chlorophyll than NDVI |
+| DVI   | N−R | Linear greenness; sensitive at high biomass |
+| MBI   | — | Modified Brightness Index; highlights bare soils |
+| VARI  | (G−R)/(G+R−B) | Atmospheric-resistant VI (visible bands only) |
+| GLI   | — | Green Leaf Index; strong in dense canopies |
+| BI    | — | Bare Soil Index; isolates unvegetated surfaces |
+| NBR   | (N−S2)/(N+S2) | Sensitive to fire severity and dry biomass |
+| NDMI  | (N−S1)/(N+S1) | Tracks canopy water content / moisture stress |
+
+**Outputs:**
+- `data/landsat_imagery_masked.tif` — cloud-masked Landsat composite (UTM)
+- `data/vegetation_indices_masked.tif` — 10-band vegetation index stack
+- `data/soils_with_indices.csv` — soil profile points with extracted index values
+- `data/plots/key_vegetation_indices.png` — spatial maps of key indices
+- `data/plots/ndvi_soil_points.png` — NDVI map overlaid with soil sampling locations
+- `data/plots/indices_boxplot.png` — distribution of index values at sampling points
+
+![Key vegetation indices — spatial maps](data/plots/key_vegetation_indices.png)
 
 ## Data Structure
 
