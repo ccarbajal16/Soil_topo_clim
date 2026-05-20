@@ -43,6 +43,7 @@ library(rsi)       # Download STAC imagery and compute spectral indices
 # Visualization
 library(ggplot2)   # Data visualization
 library(patchwork) # Combine plots
+library(tidyterra) # ggplot2 methods for SpatRaster
 ```
 
 ## Script Descriptions
@@ -180,24 +181,86 @@ locations for downstream modelling.
 
 ![Key vegetation indices — spatial maps](data/plots/key_vegetation_indices.png)
 
+### 8. NASADEM Terrain & Hydrological Covariates (`8_nasadem_terrain_hydro.R`)
+
+Loads four NASADEM 30 m DEM tiles for Peruvian basins (Huaral, Mantaro,
+Pativilca, Tarma), mosaics them, reprojects to UTM Zone 18S (EPSG:32718),
+and derives a comprehensive set of terrain and hydrological covariates using
+`terra` and `whitebox`.
+
+**Expected inputs** (place in `geodata/nasadem/`):
+
+| File | Basin |
+|------|-------|
+| `nasadem_huaral.tif` | Huaral |
+| `nasadem_mantaro.tif` | Mantaro |
+| `nasadem_pativilca.tif` | Pativilca |
+| `nasadem_tarma.tif` | Tarma |
+
+**Terrain covariates** (terra + whitebox):
+
+| Layer | Tool | Description |
+|-------|------|-------------|
+| `slope` | terra | Slope in degrees |
+| `aspect` | terra | Aspect in degrees |
+| `hillshade` | terra | Hillshade (azimuth 315°, altitude 45°) |
+| `tpi` | terra | Topographic Position Index |
+| `tri` | terra | Terrain Ruggedness Index |
+| `roughness` | terra | Surface roughness |
+| `northness` | terra | cos(aspect) — linearised northness |
+| `eastness` | terra | sin(aspect) — linearised eastness |
+| `curv_profile` | whitebox | Profile curvature |
+| `curv_plan` | whitebox | Plan curvature |
+| `curv_tangential` | whitebox | Tangential curvature |
+| `multiscale_tpi` | whitebox | Multi-scale TPI |
+
+**Hydrological covariates** (whitebox):
+
+| Layer | Description |
+|-------|-------------|
+| `twi` | Topographic Wetness Index (D-infinity SCA + slope) |
+| `flow_acc_d8` | D8 flow accumulation (cell count) |
+| `sca_dinf` | D-infinity Specific Contributing Area |
+| `ls_factor` | LS-Factor (erosion modelling) |
+| `streams` | Stream network (threshold = 1 000 cells) |
+| `strahler_order` | Strahler stream order |
+| `elev_above_stream` | Elevation above nearest stream channel |
+| `valley_depth` | Valley depth |
+
+**Workflow:**
+1. Load and mosaic four NASADEM tiles → `nasadem_mosaic_utm.tif`
+2. Compute terrain covariates with `terra::terrain()` and whitebox curvature tools
+3. Remove depressions (breach + fill) before flow routing
+4. Derive flow direction, accumulation, TWI, LS-factor, and stream network
+5. Assemble an 18-band covariate GeoTIFF stack
+6. Export multi-panel PNG maps for terrain and hydrological layers
+
+**Outputs** (all in `outputs/nasadem/`):
+- `nasadem_mosaic_utm.tif` — mosaicked and reprojected DEM
+- Individual covariate GeoTIFFs (one per variable)
+- `nasadem_covariate_stack.tif` — 18-band multi-covariate stack
+- `terrain_covariates.png` — 9-panel terrain map
+- `hydro_covariates.png` — 6-panel hydrological map
+
 ## Data Structure
 
 - `/data/`: Contains input data files
-
   - Watershed boundary shapefile (`borde_torobamba_geo.shp`)
   - Sample soil points (`soils_points.csv`)
+- `/geodata/nasadem/`: NASADEM DEM tiles for each basin
 - `/outputs/`: Directory for generated outputs
-
   - Processed DEM files
   - Terrain analysis results
   - Hydrological analysis results
   - Climate data
+  - `/outputs/nasadem/`: NASADEM-derived covariates
 
 ## Notes
 
 - For WhiteBox Tools, initialization is required: `whitebox::wbt_init()`
 - For OpenTopography API, a key needs to be set: `elevatr::set_opentopo_key()`
 - For SAGA tools, environment setup may be required
+- NASADEM tiles must be placed in `geodata/nasadem/` before running script 8
 
 ## Example Outputs
 
